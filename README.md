@@ -1,212 +1,63 @@
-# Backend - Firebase Cloud Functions
+# Cloud Functions
 
-Student-friendly serverless backend using Firebase Cloud Functions.
+Wekruit's serverless Google Cloud Functions
 
-## 👉 **START HERE: [SETUP_GUIDE.md](./SETUP_GUIDE.md)**
+## Table of Contents
 
----
+-   [Cloud Functions](#cloud-functions)
+    -   [Table of Contents](#table-of-contents)
+    -   [Organization](#organization)
+        -   [File Structure](#file-structure)
+            -   [`exports`](#exports)
+            -   [`helper`](#helper)
+            -   [`service`](#service)
+            -   [`util`](#util)
+        -   [Creating a Cloud Function](#creating-a-cloud-function)
 
-# Quick Overview
+## Environment
 
-This backend provides API endpoints using Firebase Cloud Functions. You'll learn how to:
+This project uses `Node 20`. Make sure you are using this in your node version manager of choice.
 
--   Set up Firebase Cloud Functions
--   Create serverless API endpoints
--   Connect your React frontend to backend functions
--   Handle server-side business logic
--   Interact with Firestore database
+## Organization
 
-## 📚 What are Cloud Functions?
+We use [better-firebase-functions](https://github.com/george43g/better-firebase-functions) to handle the structuring of our cloud functions
+to allow for easy deployment without the need of various barrel files.
 
-Firebase Cloud Functions are serverless functions that run in response to:
+### File Structure
 
--   HTTPS requests (API endpoints)
--   Firebase Authentication events
--   Firestore database changes
--   Storage uploads
--   Scheduled tasks (cron jobs)
+#### `exports`
 
-## 🎯 Planned Features
+The `exports` folder is what is scanned for valid cloud functions. When you are writing a cloud function, make sure it is nested in one of `exports` subfolders.
+Do **NOT** make an additional subfolder under a subfolder as the package only scans with a depth of 2 (parent -> subfolder).
 
-The backend will include:
+#### `helper`
 
-1. **User Management API**
+The `helper` folder is used to hold all helper functions that are used across multiple cloud functions, but are not necessarily a cloud function itself.
 
-    - Get user profile
-    - Update user information
-    - Delete user account
+#### `service`
 
-2. **Data Processing**
+The `service` folder is used to initialize services such as Firebase, Algolia, and Stripe clients. They are kept separate in their own folder in an effort to reduce the number of times they are initialized across files.
 
-    - Process and validate data
-    - Perform server-side calculations
-    - Generate reports
+#### `util`
 
-3. **Third-Party Integrations**
+The `util` folder is used to hold utility classes such as BigBatch. These classes are used to extend the functionality of packages used in the project to better fit our needs.
 
-    - Call external APIs
-    - Send emails
-    - Process payments
+### Creating a Cloud Function
 
-4. **Security Rules**
-    - Authentication verification
-    - Authorization checks
-    - Rate limiting
+1. Create a new file in one of the `exports` subfolders. The name of this file will be the name of the cloud function.
+2. Create a default export that is a member of `firebase-functions` (e.g. `export default functions.https.onCall(...)`).
+3. Create your cloud function as you normally would. If you need to use a helper function or service, import it from `@/helper` or `@/service` respectively. [this is not working right now somehow, just refer the path directly]
+4. npx eslint --fix .
+5. Export your function to the cloud with `firebase deploy --only functions:<NAME>` where `<NAME>` is the name of the file you created in step 1.
 
-## 📖 Prerequisites for Backend Development
+### Define environment Variable
 
-Before implementing Cloud Functions, you'll need:
+#### .env
 
--   Node.js installed
--   Firebase CLI installed
--   Basic understanding of Express.js (optional but helpful)
--   Completed frontend setup
+#### set firebase env in functions
 
-## 🔧 Future Setup Steps
+`firebase functions:secrets:set PAYPAL_CLIENT_ID`
 
-When ready to implement the backend:
+#### get env in functions
 
-### 1. Install Firebase CLI
-
-```bash
-npm install -g firebase-tools
-```
-
-### 2. Login to Firebase
-
-```bash
-firebase login
-```
-
-### 3. Initialize Cloud Functions
-
-```bash
-firebase init functions
-```
-
-### 4. Project Structure (Preview)
-
-```
-backend/
-├── functions/
-│   ├── index.js           # Main functions file
-│   ├── package.json       # Backend dependencies
-│   ├── .env              # Environment variables
-│   └── src/
-│       ├── api/          # API endpoints
-│       ├── utils/        # Utility functions
-│       └── middleware/   # Express middleware
-├── firebase.json         # Firebase configuration
-└── .firebaserc          # Firebase project settings
-```
-
-## 💡 Example Cloud Function (Preview)
-
-Here's what a simple Cloud Function might look like:
-
-```javascript
-const functions = require("firebase-functions");
-const admin = require("firebase-admin");
-
-admin.initializeApp();
-
-// HTTP Cloud Function
-exports.getUserProfile = functions.https.onRequest(async (req, res) => {
-    try {
-        // Verify authentication
-        const token = req.headers.authorization?.split("Bearer ")[1];
-        const decodedToken = await admin.auth().verifyIdToken(token);
-        const uid = decodedToken.uid;
-
-        // Get user data
-        const userDoc = await admin
-            .firestore()
-            .collection("users")
-            .doc(uid)
-            .get();
-
-        res.json({
-            success: true,
-            data: userDoc.data(),
-        });
-    } catch (error) {
-        res.status(401).json({
-            success: false,
-            error: error.message,
-        });
-    }
-});
-
-// Firestore Trigger Function
-exports.onUserCreate = functions.auth.user().onCreate(async (user) => {
-    // Create user document in Firestore
-    await admin
-        .firestore()
-        .collection("users")
-        .doc(user.uid)
-        .set({
-            email: user.email,
-            createdAt: admin.firestore.FieldValue.serverTimestamp(),
-            displayName: user.displayName || "",
-            photoURL: user.photoURL || "",
-        });
-
-    console.log("User document created:", user.uid);
-});
-```
-
-## 🔗 Calling Cloud Functions from Frontend
-
-From your React app, you'll call functions like this:
-
-```javascript
-import { getFunctions, httpsCallable } from "firebase/functions";
-
-const functions = getFunctions();
-const getUserProfile = httpsCallable(functions, "getUserProfile");
-
-// Call the function
-const result = await getUserProfile();
-console.log(result.data);
-```
-
-## 📚 Resources for Backend Development
-
--   [Firebase Cloud Functions Documentation](https://firebase.google.com/docs/functions)
--   [Cloud Functions Samples](https://github.com/firebase/functions-samples)
--   [Firebase Admin SDK](https://firebase.google.com/docs/admin/setup)
--   [Express.js Documentation](https://expressjs.com/)
-
-## 🎓 Learning Path
-
-1. ✅ Complete frontend setup
-2. 📖 Learn about serverless architecture
-3. 🔧 Install Firebase CLI
-4. 🚀 Initialize Cloud Functions
-5. 💻 Write your first function
-6. 🔗 Connect frontend to backend
-7. 🧪 Test and debug functions
-8. 🌐 Deploy to production
-
-## ⚡ Benefits of Cloud Functions
-
--   **Serverless**: No server management required
--   **Scalable**: Automatically scales with demand
--   **Cost-effective**: Pay only for what you use
--   **Secure**: Built-in authentication and authorization
--   **Fast**: Low latency globally distributed
--   **Integrated**: Works seamlessly with Firebase services
-
-## 🎯 Next Steps
-
-1. Focus on completing the frontend implementation
-2. Test all frontend features thoroughly
-3. Familiarize yourself with the Firebase Console
-4. Read Cloud Functions documentation
-5. Prepare for backend integration
-
-Stay tuned for the backend implementation guide!
-
----
-
-**Note**: This is a placeholder directory. The actual Cloud Functions implementation will be added in a future update with detailed setup instructions and example code.
+`firebase functions:secrets:access PAYPAL_CLIENT_ID`
