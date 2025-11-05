@@ -1,0 +1,21 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Rate limit configuration can only be read by the system
+    match /rate_limit_config/{document=**} {
+      allow read: if true;  // Allow read access for the cloud function
+      allow write: if false; // Only allow writes through admin SDK
+    }
+    
+    // Rate limits collection can only be accessed by the system
+    match /rate_limits/{document=**} {
+      allow read, write: if false; // Only allow access through admin SDK
+    }
+    
+    // Default rule
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

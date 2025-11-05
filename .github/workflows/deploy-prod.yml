@@ -1,0 +1,49 @@
+name: Deploy Cloud Functions to Production Environment
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build TypeScript
+        run: npm run build
+
+      - name: Create .env file
+        run: |
+          echo "OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}" >> .env
+          echo "OPENAI_ORGNIATION_NAME=${{ secrets.OPENAI_ORGNIATION_NAME }}" >> .env
+          echo "ASSEMBLY_AI_API_KEY=${{ secrets.ASSEMBLY_AI_API_KEY }}" >> .env
+          echo "ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}" >> .env
+          echo "PERPLEXITY_API_KEY=${{ secrets.PERPLEXITY_API_KEY }}" >> .env
+          echo "GCP_CLIENT_ID=${{ secrets.GCP_CLIENT_ID }}" >> .env
+          echo "GCP_CLIENT_SECRET=${{ secrets.GCP_CLIENT_SECRET }}" >> .env
+          echo "GCP_REDIRECT_URI=${{ secrets.GCP_REDIRECT_URI }}" >> .env
+          echo "GCP_OAUTH_CLIENT_ID=${{ secrets.GCP_OAUTH_CLIENT_ID }}" >> .env
+          echo "GCP_OAUTH_CLIENT_SECRET=${{ secrets.GCP_OAUTH_CLIENT_SECRET }}" >> .env
+          echo "GCP_OAUTH_REDIRECT_URI=${{ secrets.GCP_OAUTH_REDIRECT_URI }}" >> .env
+          echo "GCP_LOCAL_REDIRECT_URI=${{ secrets.GCP_LOCAL_REDIRECT_URI }}" >> .env
+          echo "GCP_TTS_API_KEY=${{ secrets.GCP_TTS_API_KEY }}" >> .env
+          echo "GMAIL_PUBSUB_TOPIC=${{ secrets.GMAIL_PUBSUB_TOPIC }}" >> .env
+          echo "PROJECT_ID=${{ secrets.PROJECT_ID }}" >> .env
+
+      - name: Deploy to Firebase
+        uses: w9jds/firebase-action@master
+        with:
+          args: deploy --only functions
+        env:
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_WEKRUIT_5F89B }}
+          PROJECT_ID: wekruit-5f89b
